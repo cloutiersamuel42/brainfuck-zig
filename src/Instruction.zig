@@ -11,6 +11,7 @@ pub const Instruction = enum(u8) {
     open_loop,
     close_loop,
 
+    // idk
     pub fn instructionFromChar(char: u8) Instruction {
         switch (char) {
             '>' => return Instruction.inc_data_p,

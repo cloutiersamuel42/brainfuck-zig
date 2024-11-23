@@ -53,8 +53,6 @@ const Program = struct {
         @memset(&self.stack, 0);
 
         interpret: while (self.instr_ptr < self.n_instructions) {
-            //std.debug.print("evaluating: {d}\n", .{self.instr_ptr});
-
             switch (self.instructions[self.instr_ptr].instruction) {
                 Instruction.inc => self.stack[self.data_ptr] +%= 1,
                 Instruction.dec => self.stack[self.data_ptr] -%= 1,
