@@ -21,7 +21,7 @@ const Program = struct {
 
     const Self = @This();
     const max_instructions = 1024;
-    const stack_size = 100;
+    const stack_size = 30_000;
 
     pub fn addInstruction(self: *Self, instruction: Token) !void {
         if (self.n_instructions >= max_instructions) return ParseError.FileTooBig;
@@ -105,20 +105,6 @@ const Program = struct {
     }
 };
 
-pub fn main() !void {
-    const txt = ">,>+++++++++,>+++++++++++[<++++++<++++++<+>>>-]<<.>.<<-.>.>.<<.";
-
-    var p = try parseProgram(txt);
-
-    p.start() catch |e| {
-        std.debug.print("{any}", .{e});
-        try p.dumpStack();
-        return;
-    };
-
-    try p.dumpStack();
-}
-
 fn parseProgram(data: []const u8) !Program {
     var i: usize = 0;
     var program: Program = Program{ .instructions = undefined };
@@ -146,6 +132,44 @@ fn parseProgram(data: []const u8) !Program {
     if (brackets.items.len != 0) return ParseError.UnmatchedBrackets;
 
     return program;
+}
+
+pub fn main() !u8 {
+    const stderr = std.io.getStdErr().writer();
+
+    const args = std.process.argsAlloc(std.heap.page_allocator) catch |err| {
+        try stderr.print("brainfk: error: {any}\n", .{err});
+        return 1;
+    };
+    defer std.process.argsFree(std.heap.page_allocator, args);
+
+    if (args.len < 2) {
+        try stderr.print("brainfk: error: Enter brainfuck file as argument\n", .{});
+        return 1;
+    }
+
+    const file = std.fs.cwd().openFile(args[1], .{ .mode = .read_only }) catch {
+        try stderr.print("brainfk: {s}: Could not open file.\n", .{args[1]});
+        return 1;
+    };
+    defer file.close();
+
+    const txt = file.readToEndAlloc(std.heap.page_allocator, 65_000) catch {
+        try stderr.print("brainfk: error: File too big\n", .{});
+        return 1;
+    };
+    defer std.heap.page_allocator.free(txt);
+
+    var p = try parseProgram(txt);
+
+    p.start() catch |e| {
+        std.debug.print("{any}\n", .{e});
+        //try p.dumpStack();
+        return 1;
+    };
+
+    //try p.dumpStack();
+    return 0;
 }
 
 test "instruction from char" {
